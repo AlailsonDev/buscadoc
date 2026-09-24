@@ -1,0 +1,20 @@
+node_modules
+.next
+out
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+next-env.d.ts
+*.pem
+*-service-account*.json
+
+# Chaves do Google (o nome gerado é "<projeto>-<hash>.json"): ignora qualquer JSON na raiz,
+# exceto os arquivos de configuração do projeto.
+/*.json
+!/package.json
+!/package-lock.json
+!/tsconfig.json
+credentials*.json
+*.key
+*.p12
