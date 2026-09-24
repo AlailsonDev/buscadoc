@@ -1,10 +1,18 @@
 import Link from "next/link";
 import { FileSearch, ShieldCheck } from "lucide-react";
 import { HomeSearch } from "@/components/HomeSearch";
+import { UserMenu } from "@/components/UserMenu";
+import { requirePageSession } from "@/lib/auth";
 
-export default function Home() {
+export default async function Home() {
+  const session = await requirePageSession();
+
   return (
     <div className="flex min-h-dvh flex-col px-4 pt-[env(safe-area-inset-top)]">
+      <div className="flex justify-end pt-3">
+        <UserMenu email={session.email} />
+      </div>
+
       <main id="conteudo" className="flex flex-1 flex-col items-center justify-center py-10">
         <div className="animate-fade-up w-full max-w-2xl text-center">
           <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-700 text-white shadow-sm sm:h-16 sm:w-16">
@@ -24,10 +32,11 @@ export default function Home() {
         <p className="flex items-center gap-1.5">
           <ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden /> Uso restrito a servidores autorizados da CGM Jaboatão dos Guararapes
         </p>
-        {/* O acesso é protegido pelo token de administração; o link apenas facilita a navegação. */}
-        <Link href="/admin" className="inline-flex min-h-11 items-center px-3 underline hover:text-brand-700">
-          Administração
-        </Link>
+        {session.isAdmin && (
+          <Link href="/admin" className="inline-flex min-h-11 items-center px-3 underline hover:text-brand-700">
+            Administração
+          </Link>
+        )}
       </footer>
     </div>
   );

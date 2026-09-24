@@ -26,7 +26,9 @@ lib/
   demo-source.ts    fonte fictícia para DEMO_MODE
   catalog.ts        catálogo de metadados em memória (CatalogStore) + autorização de arquivos
   search.ts         regras de busca (normalização, pontuação, filtros) — puro e testado
-  auth.ts           ponto único de autenticação/autorização
+  auth.ts           sessão e permissões (ponto único de controle de acesso)
+  access.ts         regras de quem entra e de quem é administrador (puras, testadas)
+auth.ts (raiz)      configuração do Auth.js: provedores Google e Microsoft
   rate-limit.ts, api.ts, env.ts, logger.ts, file-types.ts, utils.ts, types.ts
 ```
 
@@ -76,7 +78,7 @@ Outros comandos: `npm run build`, `npm start`, `npm run typecheck`, `npm test`.
    - `GOOGLE_DRIVE_ROOT_FOLDER_ID` — trecho final da URL da pasta (`drive.google.com/drive/folders/<ID>`)
    - `GOOGLE_SERVICE_ACCOUNT_EMAIL` — campo `client_email`
    - `GOOGLE_PRIVATE_KEY` — campo `private_key`, entre aspas, com as quebras de linha como `\n`
-   - `ADMIN_TOKEN` — valor longo e aleatório (ex.: `openssl rand -hex 32`)
+   - Variáveis de login: veja a seção **Login e controle de acesso**
 7. **Executar**: `npm run dev` (ou `npm run build && npm start`) e abra `/admin` para conferir a conexão e a contagem de documentos.
 
 ## Variáveis de ambiente
@@ -104,12 +106,24 @@ Veja [.env.example](.env.example). Nenhuma credencial é lida no frontend nem en
 - Rate limit por IP (`RATE_LIMIT_SEARCH_PER_MIN`, `RATE_LIMIT_FILE_PER_MIN`).
 - Visualização inline apenas para PDF e imagens; demais tipos são sempre anexos. Cabeçalhos `nosniff`, CSP, `X-Frame-Options` e `Cache-Control: no-store` nos documentos.
 - Logs sem credenciais, tokens, conteúdo de documentos ou o texto pesquisado (apenas o tamanho da consulta e a contagem de resultados).
-- `/admin` exige `ADMIN_TOKEN`; em produção, sem o token configurado o painel fica bloqueado.
-- **Sem login na Fase 1**: quem alcançar a URL pode pesquisar. Restrinja o acesso pela rede (VPN, IP) até implementar a autenticação institucional (Fase 2). Toda a API já passa por `lib/auth.ts`, o ponto único onde o login será conectado.
+- **Login obrigatório** (Google e/ou Microsoft) e **lista de e-mails autorizados**: um login válido não basta, o e-mail precisa estar em `ALLOWED_EMAILS` ou `ADMIN_EMAILS`. Lista vazia = ninguém entra. Toda a API e todas as páginas passam por `lib/auth.ts`.
+- A lista é reavaliada a cada requisição: remover um e-mail bloqueia a pessoa imediatamente, mesmo com sessão aberta. A sessão dura 8 horas.
+- `/admin` e a sincronização exigem perfil de administrador (`ADMIN_EMAILS`); a sincronização confere a origem da requisição (CSRF).
+- Microsoft: contas pessoais (Outlook.com/Hotmail) são aceitas. Contas de trabalho/escola só de tenants listados em `AUTH_MICROSOFT_ALLOWED_TENANTS`, porque o e-mail de contas de outros tenants pode ser definido pelo administrador deles.
+- Em produção, sem nenhum provedor configurado, ninguém entra (falha segura). Só em desenvolvimento, sem provedor, o acesso fica aberto.
+
+## Login e controle de acesso
+
+1. **Google**: no projeto do Google Cloud, *APIs e serviços → Credenciais → Criar credenciais → ID do cliente OAuth* (tipo *Aplicativo da Web*). Em *URIs de redirecionamento autorizados* informe `https://SEU-DOMINIO/api/auth/callback/google` (e `http://localhost:3000/api/auth/callback/google` para testes). Configure a *Tela de permissão OAuth* (tipo Externo). Copie ID e segredo para `AUTH_GOOGLE_ID` e `AUTH_GOOGLE_SECRET`.
+2. **Microsoft**: em <https://entra.microsoft.com> → *Registros de aplicativo → Novo registro*. Tipos de conta: *Contas em qualquer diretório organizacional e contas pessoais da Microsoft*. URI de redirecionamento (Web): `https://SEU-DOMINIO/api/auth/callback/microsoft`. Em *Certificados e segredos* crie um segredo. `AUTH_MICROSOFT_ID` = ID do aplicativo (cliente); `AUTH_MICROSOFT_SECRET` = *valor* do segredo.
+3. `AUTH_SECRET`: gere com `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`.
+4. `ALLOWED_EMAILS` e `ADMIN_EMAILS`: e-mails separados por vírgula. Alterar a lista exige reiniciar/redeployar o serviço.
+
+Configure apenas os provedores que for usar; o botão de um provedor sem credenciais não aparece.
 
 ## Preparação para o futuro
 
-- **Autenticação**: implementar `getSession()` em `lib/auth.ts` (Google Workspace/Microsoft/OIDC). Rotas e componentes não mudam.
+- **Autorização por setor/usuário**: a lista de e-mails hoje vem de variáveis de ambiente; para permissões por setor, mover a lista para o banco da Fase 3 mantendo `lib/access.ts`.
 - **Indexação**: `CatalogStore` (`lib/catalog.ts`) é a fronteira; troque a versão em memória por SQLite/Postgres alimentado na sincronização.
 - **Pesquisa no conteúdo**: `SearchProvider` em `lib/search.ts` tem o ponto de extensão documentado. Exemplo: a busca por "empresa responsável pela limpeza" encontrará `Contrato_2026_001.pdf` quando houver índice de texto extraído dos PDFs/Word e OCR para digitalizados.
 - **Filtro por pasta**: a API já aceita `?pasta=<id>` e cada registro guarda seus ancestrais; falta o seletor na interface.
@@ -118,7 +132,7 @@ Veja [.env.example](.env.example). Nenhuma credencial é lida no frontend nem en
 
 **Fase 1 (esta versão)** — busca por nome e número de processo, Google Drive, visualização, download, filtros básicos.
 
-**Fase 2** — autenticação institucional, histórico de pesquisas, favoritos, busca mais inteligente.
+**Fase 2** — (login com Google/Microsoft e lista de autorizados já implementados), histórico de pesquisas, favoritos, busca mais inteligente.
 
 **Fase 3** — indexação local em banco, pesquisa dentro do conteúdo, OCR, busca semântica.
 
