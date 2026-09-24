@@ -46,7 +46,9 @@ export function AdminDashboard() {
         setStatus(null);
         setError("Acesso negado. Informe o token de administração.");
       } else if (!res.ok) {
-        setError("Não foi possível obter as informações.");
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setStatus(null);
+        setError(body.error ?? "Não foi possível obter as informações.");
       } else {
         setStatus((await res.json()) as Status);
         try {

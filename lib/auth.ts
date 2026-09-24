@@ -26,15 +26,22 @@ export function requireUser(req: Request): Session | null {
   return getSession(req);
 }
 
+// Painéis de hospedagem às vezes gravam espaços ou aspas junto do valor colado.
+const clean = (v: string) => v.trim().replace(/^["']|["']$/g, "");
+
+/** Em produção, sem ADMIN_TOKEN o painel fica desativado (nenhum token é aceito). */
+export function adminDisabled(): boolean {
+  return process.env.NODE_ENV === "production" && !clean(env.adminToken);
+}
+
 /**
  * Administração na v1: token secreto em ADMIN_TOKEN (cabeçalho Authorization: Bearer ...).
- * Em produção, sem ADMIN_TOKEN configurado o painel fica bloqueado.
  * Substituir por `session.roles.includes("admin")` quando houver login.
  */
 export function requireAdmin(req: Request): boolean {
-  const expected = env.adminToken;
+  const expected = clean(env.adminToken);
   if (!expected) return process.env.NODE_ENV !== "production";
-  const given = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  const given = clean(req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "");
   const a = Buffer.from(given);
   const b = Buffer.from(expected);
   return a.length === b.length && timingSafeEqual(a, b);
