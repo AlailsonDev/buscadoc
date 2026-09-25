@@ -6,6 +6,7 @@ import type { DocumentDTO } from "@/lib/types";
 import { FileTypeIcon } from "./FileTypeIcon";
 import { OfficePreview } from "./OfficePreview";
 import { PdfViewer } from "./PdfViewer";
+import { TextPreview } from "./TextPreview";
 
 const ZOOMS = [50, 75, 100, 125, 150, 200];
 
@@ -34,8 +35,9 @@ export function DocumentViewer({ doc, onClose }: { doc: DocumentDTO; onClose: ()
   const isPdf = doc.extension === "pdf";
   const isImage = doc.kind === "image" && doc.previewable;
   const isOffice = doc.previewable && (doc.extension === "docx" || doc.extension === "xlsx");
-  const showZoom = isPdf || isImage || isOffice;
-  const zoomOnMobile = isOffice || (isPdf && touch);
+  const isText = doc.previewable && doc.extension === "txt";
+  const showZoom = isPdf || isImage || isOffice || isText;
+  const zoomOnMobile = isOffice || isText || (isPdf && touch);
 
   // Fechar pela interface: quem abriu o visualizador (ResultsView) decide como fechar, voltando no histórico.
   const close = onClose;
@@ -142,6 +144,8 @@ export function DocumentViewer({ doc, onClose }: { doc: DocumentDTO; onClose: ()
             />
           ) : isPdf ? (
             <PdfViewer url={base} size={doc.size} zoom={zoom} />
+          ) : isText ? (
+            <TextPreview url={base} size={doc.size} zoom={zoom} />
           ) : isOffice ? (
             <OfficePreview
               url={base}

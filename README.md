@@ -48,6 +48,7 @@ O catálogo é renovado automaticamente após `CATALOG_TTL_MINUTES` (padrão 15)
 - **Botão/gesto de voltar:** o documento aberto fica na URL (`?doc=<id>`). Voltar fecha o visualizador e mantém o usuário nos resultados; o link também pode ser compartilhado.
 - **Imagens:** exibidas na própria página.
 - **Word (.docx) e Excel (.xlsx):** convertidos no próprio navegador (`mammoth` e `read-excel-file`, carregados só ao abrir o documento). O Word reflui para a largura da tela; a planilha rola na horizontal, com abas por planilha e limite de 1.000 linhas exibidas. É uma visualização de leitura: formatações complexas podem diferir do original. O HTML convertido é sanitizado (`lib/sanitize-html.ts`).
+- **Texto (.txt):** exibido como texto simples (UTF-8 ou Windows-1252, detectado automaticamente), com zoom. Limite de 2 MB.
 - Arquivos acima de 30 MB, e formatos antigos (`.doc`, `.xls`) e demais tipos, têm apenas download.
 
 > Arquivos nativos do Google (Docs, Sheets, atalhos) não são listados na Fase 1, pois não possuem conteúdo binário para baixar. Envie os arquivos em formato PDF/Office.
