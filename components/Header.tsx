@@ -8,10 +8,10 @@ export function Header({ children, actions = null }: { children?: React.ReactNod
         <Link
           href="/"
           className="flex h-11 shrink-0 items-center gap-2 font-semibold text-brand-800"
-          aria-label="BuscaDoc — página inicial"
+          aria-label="BuscaCGM — página inicial"
         >
           <FileSearch className="h-6 w-6 text-brand-600" aria-hidden />
-          <span className="hidden text-lg sm:inline">BuscaDoc</span>
+          <span className="hidden text-lg sm:inline">BuscaCGM</span>
         </Link>
         <div className="min-w-0 flex-1">{children}</div>
         {actions}

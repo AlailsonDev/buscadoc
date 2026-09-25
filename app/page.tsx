@@ -19,7 +19,7 @@ export default async function Home() {
           <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-700 text-white shadow-sm sm:h-16 sm:w-16">
             <FileSearch className="h-7 w-7 sm:h-8 sm:w-8" aria-hidden />
           </span>
-          <h1 className="mt-5 text-4xl font-semibold tracking-tight text-brand-800 sm:text-5xl">BuscaDoc</h1>
+          <h1 className="mt-5 text-4xl font-semibold tracking-tight text-brand-800 sm:text-5xl">BuscaCGM</h1>
           <p className="mt-2 text-base text-muted sm:text-lg">Busca de documentos institucionais</p>
 
           <div className="mt-8 sm:mt-10">

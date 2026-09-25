@@ -65,7 +65,7 @@ function buildFiles(): DriveFileRaw[] {
 /** PDF mínimo válido (uma página A4 com texto), gerado em código: sem binários no repositório. */
 function samplePdf(title: string): Uint8Array {
   const safe = title.normalize("NFD").replace(/[^\x20-\x7e]/g, "").replace(/[()\\]/g, "");
-  const stream = `BT /F1 20 Tf 60 760 Td (BuscaDoc - documento de demonstracao) Tj 0 -30 Td /F1 14 Tf (${safe}) Tj ET`;
+  const stream = `BT /F1 20 Tf 60 760 Td (BuscaCGM - documento de demonstracao) Tj 0 -30 Td /F1 14 Tf (${safe}) Tj ET`;
   const objs = [
     "<< /Type /Catalog /Pages 2 0 R >>",
     "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",

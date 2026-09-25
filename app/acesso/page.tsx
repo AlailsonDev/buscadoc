@@ -3,7 +3,7 @@ import { AlertTriangle, FileSearch, ShieldCheck } from "lucide-react";
 import { AccessForm } from "@/components/AccessForm";
 import { gateMisconfigured, pageHasAccess } from "@/lib/auth";
 
-export const metadata = { title: "Acesso — BuscaDoc" };
+export const metadata = { title: "Acesso — BuscaCGM" };
 
 export default async function AcessoPage() {
   if (await pageHasAccess()) redirect("/");
@@ -14,7 +14,7 @@ export default async function AcessoPage() {
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-700 text-white shadow-sm">
           <FileSearch className="h-7 w-7" aria-hidden />
         </span>
-        <h1 className="mt-5 text-3xl font-semibold tracking-tight text-brand-800">BuscaDoc</h1>
+        <h1 className="mt-5 text-3xl font-semibold tracking-tight text-brand-800">BuscaCGM</h1>
         <p className="mt-2 text-muted">Informe o token de acesso para pesquisar os documentos.</p>
 
         {gateMisconfigured() ? (

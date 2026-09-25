@@ -1,10 +1,10 @@
 import type { MetadataRoute } from "next";
 
-/** Permite "Adicionar à tela inicial" no Android/Chrome com o ícone e o nome do BuscaDoc. */
+/** Permite "Adicionar à tela inicial" no Android/Chrome com o ícone e o nome do BuscaCGM. */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "BuscaDoc — Busca de documentos institucionais",
-    short_name: "BuscaDoc",
+    name: "BuscaCGM — Busca de documentos institucionais",
+    short_name: "BuscaCGM",
     description: "Pesquise documentos institucionais pelo número do processo, nome ou palavra-chave.",
     start_url: "/",
     scope: "/",

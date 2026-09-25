@@ -1,4 +1,4 @@
-# BuscaDoc
+# BuscaCGM
 
 Buscador interno de documentos institucionais. O **Google Drive é o repositório oficial**: nenhum arquivo é armazenado no servidor da aplicação. O backend consulta o Drive por meio de uma Service Account e entrega ao navegador apenas metadados, visualização e download.
 

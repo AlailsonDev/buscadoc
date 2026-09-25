@@ -1,7 +1,7 @@
 import { AdminDashboard } from "@/components/AdminDashboard";
 import { Header } from "@/components/Header";
 
-export const metadata = { title: "Administração — BuscaDoc" };
+export const metadata = { title: "Administração — BuscaCGM" };
 
 export default function AdminPage() {
   return (

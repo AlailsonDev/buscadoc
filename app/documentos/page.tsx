@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { ResultsView } from "@/components/ResultsView";
 import { gateRequired, requirePageAccess } from "@/lib/auth";
 
-export const metadata = { title: "Resultados — BuscaDoc" };
+export const metadata = { title: "Resultados — BuscaCGM" };
 
 export default async function DocumentosPage() {
   await requirePageAccess();

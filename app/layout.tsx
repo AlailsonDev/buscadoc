@@ -2,10 +2,10 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "BuscaDoc — Busca de documentos institucionais",
+  title: "BuscaCGM — Busca de documentos institucionais",
   description: "Pesquise documentos institucionais pelo número do processo, nome ou palavra-chave.",
   robots: { index: false, follow: false },
-  appleWebApp: { capable: true, title: "BuscaDoc", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "BuscaCGM", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
