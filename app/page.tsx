@@ -1,10 +1,19 @@
 import Link from "next/link";
 import { FileSearch, ShieldCheck } from "lucide-react";
 import { HomeSearch } from "@/components/HomeSearch";
+import { LogoutButton } from "@/components/LogoutButton";
+import { gateRequired, requirePageAccess } from "@/lib/auth";
 
-export default function Home() {
+export default async function Home() {
+  await requirePageAccess();
   return (
     <div className="flex min-h-dvh flex-col px-4 pt-[env(safe-area-inset-top)]">
+      {gateRequired() && (
+        <div className="flex justify-end pt-3">
+          <LogoutButton />
+        </div>
+      )}
+
       <main id="conteudo" className="flex flex-1 flex-col items-center justify-center py-10">
         <div className="animate-fade-up w-full max-w-2xl text-center">
           <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-700 text-white shadow-sm sm:h-16 sm:w-16">

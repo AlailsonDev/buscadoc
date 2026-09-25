@@ -26,9 +26,7 @@ lib/
   demo-source.ts    fonte fictícia para DEMO_MODE
   catalog.ts        catálogo de metadados em memória (CatalogStore) + autorização de arquivos
   search.ts         regras de busca (normalização, pontuação, filtros) — puro e testado
-  auth.ts           sessão e permissões (ponto único de controle de acesso)
-  access.ts         regras de quem entra e de quem é administrador (puras, testadas)
-auth.ts (raiz)      configuração do Auth.js: provedores Google e Microsoft
+  auth.ts           ponto único de autenticação/autorização
   rate-limit.ts, api.ts, env.ts, logger.ts, file-types.ts, utils.ts, types.ts
 ```
 
@@ -47,7 +45,7 @@ O catálogo é renovado automaticamente após `CATALOG_TTL_MINUTES` (padrão 15)
 ## Visualização de documentos
 
 - **PDF:** no computador, pelo leitor nativo do navegador. No celular e no tablet, por um leitor próprio (`pdf.js`), porque o Chrome do Android não exibe PDF embutido e abrir em outra aba faria o usuário perder o botão Voltar. Ele desenha as páginas sob demanda (economiza memória) e mostra "Página X de N". O arquivo `public/pdf.worker.min.mjs` é uma cópia de `node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs`; ao atualizar o `pdfjs-dist`, copie-o novamente para manter as versões iguais.
-- **Botão/gesto de voltar:** o documento aberto fica na URL (`?doc=<id>`). Voltar fecha o visualizador e mantém o usuário nos resultados; o link também pode ser compartilhado (exige login).
+- **Botão/gesto de voltar:** o documento aberto fica na URL (`?doc=<id>`). Voltar fecha o visualizador e mantém o usuário nos resultados; o link também pode ser compartilhado.
 - **Imagens:** exibidas na própria página.
 - **Word (.docx) e Excel (.xlsx):** convertidos no próprio navegador (`mammoth` e `read-excel-file`, carregados só ao abrir o documento). O Word reflui para a largura da tela; a planilha rola na horizontal, com abas por planilha e limite de 1.000 linhas exibidas. É uma visualização de leitura: formatações complexas podem diferir do original. O HTML convertido é sanitizado (`lib/sanitize-html.ts`).
 - Arquivos acima de 30 MB, e formatos antigos (`.doc`, `.xls`) e demais tipos, têm apenas download.
@@ -80,7 +78,7 @@ Outros comandos: `npm run build`, `npm start`, `npm run typecheck`, `npm test`.
    - `GOOGLE_DRIVE_ROOT_FOLDER_ID` — trecho final da URL da pasta (`drive.google.com/drive/folders/<ID>`)
    - `GOOGLE_SERVICE_ACCOUNT_EMAIL` — campo `client_email`
    - `GOOGLE_PRIVATE_KEY` — campo `private_key`, entre aspas, com as quebras de linha como `\n`
-   - Variáveis de login: veja a seção **Login e controle de acesso**
+   - `ADMIN_TOKEN` — valor longo e aleatório (ex.: `openssl rand -hex 32`); `ACCESS_TOKEN` — token que os usuários digitam (opcional)
 7. **Executar**: `npm run dev` (ou `npm run build && npm start`) e abra `/admin` para conferir a conexão e a contagem de documentos.
 
 ## Variáveis de ambiente
@@ -108,24 +106,14 @@ Veja [.env.example](.env.example). Nenhuma credencial é lida no frontend nem en
 - Rate limit por IP (`RATE_LIMIT_SEARCH_PER_MIN`, `RATE_LIMIT_FILE_PER_MIN`).
 - Visualização inline apenas para PDF e imagens; demais tipos são sempre anexos. Cabeçalhos `nosniff`, CSP, `X-Frame-Options` e `Cache-Control: no-store` nos documentos.
 - Logs sem credenciais, tokens, conteúdo de documentos ou o texto pesquisado (apenas o tamanho da consulta e a contagem de resultados).
-- **Login obrigatório** (Google e/ou Microsoft) e **lista de e-mails autorizados**: um login válido não basta, o e-mail precisa estar em `ALLOWED_EMAILS` ou `ADMIN_EMAILS`. Lista vazia = ninguém entra. Toda a API e todas as páginas passam por `lib/auth.ts`.
-- A lista é reavaliada a cada requisição: remover um e-mail bloqueia a pessoa imediatamente, mesmo com sessão aberta. A sessão dura 8 horas.
-- `/admin` e a sincronização exigem perfil de administrador (`ADMIN_EMAILS`); a sincronização confere a origem da requisição (CSRF).
-- Microsoft: contas pessoais (Outlook.com/Hotmail) são aceitas. Contas de trabalho/escola só de tenants listados em `AUTH_MICROSOFT_ALLOWED_TENANTS`, porque o e-mail de contas de outros tenants pode ser definido pelo administrador deles.
-- Em produção, sem nenhum provedor configurado, ninguém entra (falha segura). Só em desenvolvimento, sem provedor, o acesso fica aberto.
-
-## Login e controle de acesso
-
-1. **Google**: no projeto do Google Cloud, *APIs e serviços → Credenciais → Criar credenciais → ID do cliente OAuth* (tipo *Aplicativo da Web*). Em *URIs de redirecionamento autorizados* informe `https://SEU-DOMINIO/api/auth/callback/google` (e `http://localhost:3000/api/auth/callback/google` para testes). Configure a *Tela de permissão OAuth* (tipo Externo). Copie ID e segredo para `AUTH_GOOGLE_ID` e `AUTH_GOOGLE_SECRET`.
-2. **Microsoft**: em <https://entra.microsoft.com> → *Registros de aplicativo → Novo registro*. Tipos de conta: *Contas em qualquer diretório organizacional e contas pessoais da Microsoft*. URI de redirecionamento (Web): `https://SEU-DOMINIO/api/auth/callback/microsoft`. Em *Certificados e segredos* crie um segredo. `AUTH_MICROSOFT_ID` = ID do aplicativo (cliente); `AUTH_MICROSOFT_SECRET` = *valor* do segredo.
-3. `AUTH_SECRET`: gere com `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`.
-4. `ALLOWED_EMAILS` e `ADMIN_EMAILS`: e-mails separados por vírgula. Alterar a lista exige reiniciar/redeployar o serviço.
-
-Configure apenas os provedores que for usar; o botão de um provedor sem credenciais não aparece.
+- **Token de acesso**: para usar a aplicação (buscar, visualizar, baixar) é preciso digitar o token na tela `/acesso`. O servidor confere e grava um cookie assinado (HttpOnly, 8 horas) que não contém o token. Trocar o token no servidor derruba todas as sessões. Há limite de 8 tentativas por minuto por IP contra tentativa de adivinhar o token.
+- `ACCESS_TOKEN` (opcional) é o token dos usuários; se ficar vazio, o `ADMIN_TOKEN` também serve como token de acesso. **Em produção, sem nenhum dos dois, ninguém entra.** O token de acesso não dá acesso ao `/admin`.
+- `/admin` exige `ADMIN_TOKEN`, digitado na própria página; em produção, sem o token configurado o painel fica bloqueado.
+- **Limitação**: o token é compartilhado (não identifica quem acessou e vale para todos até ser trocado). Para identificar pessoas e revogar acessos individuais, implemente a autenticação institucional (Fase 2). Toda a API e todas as páginas passam por `lib/auth.ts`, o ponto único onde o login será conectado.
 
 ## Preparação para o futuro
 
-- **Autorização por setor/usuário**: a lista de e-mails hoje vem de variáveis de ambiente; para permissões por setor, mover a lista para o banco da Fase 3 mantendo `lib/access.ts`.
+- **Autenticação**: implementar `getSession()` em `lib/auth.ts` (Google Workspace/Microsoft/OIDC). Rotas e componentes não mudam.
 - **Indexação**: `CatalogStore` (`lib/catalog.ts`) é a fronteira; troque a versão em memória por SQLite/Postgres alimentado na sincronização.
 - **Pesquisa no conteúdo**: `SearchProvider` em `lib/search.ts` tem o ponto de extensão documentado. Exemplo: a busca por "empresa responsável pela limpeza" encontrará `Contrato_2026_001.pdf` quando houver índice de texto extraído dos PDFs/Word e OCR para digitalizados.
 - **Filtro por pasta**: a API já aceita `?pasta=<id>` e cada registro guarda seus ancestrais; falta o seletor na interface.
@@ -134,7 +122,7 @@ Configure apenas os provedores que for usar; o botão de um provedor sem credenc
 
 **Fase 1 (esta versão)** — busca por nome e número de processo, Google Drive, visualização, download, filtros básicos.
 
-**Fase 2** — (login com Google/Microsoft e lista de autorizados já implementados), histórico de pesquisas, favoritos, busca mais inteligente.
+**Fase 2** — autenticação institucional, histórico de pesquisas, favoritos, busca mais inteligente.
 
 **Fase 3** — indexação local em banco, pesquisa dentro do conteúdo, OCR, busca semântica.
 

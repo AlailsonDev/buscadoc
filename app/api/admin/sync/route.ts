@@ -6,7 +6,7 @@ import { log } from "@/lib/logger";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  const blocked = guard(req, "admin", 20);
+  const blocked = guard(req, "admin", 20, { access: false });
   if (blocked) return blocked;
   if (adminDisabled()) {
     return jsonError(503, "Painel desativado: defina a variável ADMIN_TOKEN nas configurações do servidor.");

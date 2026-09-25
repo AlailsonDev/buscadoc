@@ -7,6 +7,7 @@ import { DocumentList } from "./DocumentList";
 import { DocumentViewer } from "./DocumentViewer";
 import { Filters } from "./Filters";
 import { Header } from "./Header";
+import { LogoutButton } from "./LogoutButton";
 import { Pagination } from "./Pagination";
 import { SearchBar } from "./SearchBar";
 import { EmptyState, ErrorState, LoadingState } from "./states";
@@ -18,7 +19,7 @@ type State =
   | { status: "error"; message?: string }
   | { status: "done"; data: SearchResult };
 
-export function ResultsView({ userEmail = null }: { userEmail?: string | null }) {
+export function ResultsView({ canLogout = false }: { canLogout?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -55,7 +56,7 @@ export function ResultsView({ userEmail = null }: { userEmail?: string | null })
     const ctrl = new AbortController();
     fetch(`/api/documentos/${encodeURIComponent(docId)}`, { signal: ctrl.signal })
       .then(async (res) => {
-        if (res.status === 401) return void (window.location.href = "/login");
+        if (res.status === 401) return void (window.location.href = "/acesso");
         if (res.ok) setFetchedDoc((await res.json()) as DocumentDTO);
       })
       .catch(() => {});
@@ -88,7 +89,7 @@ export function ResultsView({ userEmail = null }: { userEmail?: string | null })
 
     fetch(`/api/documentos?${sp}`, { signal: ctrl.signal })
       .then(async (res) => {
-        if (res.status === 401) return void (window.location.href = "/login"); // sessão expirada
+        if (res.status === 401) return void (window.location.href = "/acesso"); // sessão expirada
         if (res.ok) return setState({ status: "done", data: (await res.json()) as SearchResult });
         const body = (await res.json().catch(() => ({}))) as { error?: string };
         setState({ status: "error", message: res.status === 400 || res.status === 429 ? body.error : undefined });
@@ -101,7 +102,7 @@ export function ResultsView({ userEmail = null }: { userEmail?: string | null })
 
   return (
     <>
-      <Header userEmail={userEmail}>
+      <Header actions={canLogout ? <LogoutButton /> : null}>
         <SearchBar key={q} size="md" initialValue={q} onSearch={(v) => navigate({ q: v, pagina: null })} />
       </Header>
 

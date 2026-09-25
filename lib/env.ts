@@ -28,6 +28,9 @@ export const env = {
   get catalogTtlMs() {
     return int(process.env.CATALOG_TTL_MINUTES, 15) * 60_000;
   },
+  get accessToken() {
+    return process.env.ACCESS_TOKEN ?? "";
+  },
   get adminToken() {
     return process.env.ADMIN_TOKEN ?? "";
   },
