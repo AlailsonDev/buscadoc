@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Download, Minus, Plus, X } from "lucide-react";
+import { isTextExtension } from "@/lib/file-types";
 import type { DocumentDTO } from "@/lib/types";
 import { FileTypeIcon } from "./FileTypeIcon";
 import { OfficePreview } from "./OfficePreview";
@@ -35,7 +36,7 @@ export function DocumentViewer({ doc, onClose }: { doc: DocumentDTO; onClose: ()
   const isPdf = doc.extension === "pdf";
   const isImage = doc.kind === "image" && doc.previewable;
   const isOffice = doc.previewable && (doc.extension === "docx" || doc.extension === "xlsx");
-  const isText = doc.previewable && doc.extension === "txt";
+  const isText = doc.previewable && isTextExtension(doc.extension);
   const showZoom = isPdf || isImage || isOffice || isText;
   const zoomOnMobile = isOffice || isText || (isPdf && touch);
 

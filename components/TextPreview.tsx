@@ -22,7 +22,7 @@ function decode(buffer: ArrayBuffer): string {
   }
 }
 
-/** Exibe arquivos de texto (.txt) como texto simples, com quebra de linha para caber no celular. */
+/** Exibe arquivos de texto (.txt, .csv, .md, .json, .log, .xml) como texto simples, com quebra de linha para caber no celular. */
 export function TextPreview({ url, size, zoom }: Props) {
   const [state, setState] = useState<State>({ status: "loading" });
 

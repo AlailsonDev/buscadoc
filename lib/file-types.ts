@@ -13,7 +13,16 @@ const EXT_KIND: Record<string, FileKind> = {
   png: "image",
   webp: "image",
   txt: "text",
+  csv: "text",
+  md: "text",
+  json: "text",
+  log: "text",
+  xml: "text",
 };
+
+/** Formatos de texto puro exibidos como texto no navegador (ver TextPreview). */
+export const TEXT_EXTENSIONS = new Set(["txt", "csv", "md", "json", "log", "xml"]);
+export const isTextExtension = (extension: string) => TEXT_EXTENSIONS.has(extension);
 
 /** Tipos que o navegador exibe com segurança dentro da aplicação. */
 const INLINE_MIME: Record<string, string> = {
@@ -43,7 +52,7 @@ export const MAX_TEXT_PREVIEW_BYTES = 2 * 1024 * 1024;
 
 export function isPreviewable(extension: string, size: number | null = null): boolean {
   if (extension in INLINE_MIME) return true;
-  if (extension === "txt") return size === null || size <= MAX_TEXT_PREVIEW_BYTES;
+  if (isTextExtension(extension)) return size === null || size <= MAX_TEXT_PREVIEW_BYTES;
   return OFFICE_PREVIEW.has(extension) && (size === null || size <= MAX_OFFICE_PREVIEW_BYTES);
 }
 

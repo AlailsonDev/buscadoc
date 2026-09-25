@@ -51,3 +51,13 @@ test("filtro de tipo e pasta", () => {
 test("filtro de período exclui antigos", () => {
   assert.equal(run("processo", { period: "hoje" }).total, 0);
 });
+
+test("formatos de texto têm visualização e o tipo certo", async () => {
+  const { isPreviewable, getKind } = await import("./file-types.ts");
+  for (const ext of ["txt", "csv", "md", "json", "log", "xml"]) {
+    assert.equal(isPreviewable(ext, 1000), true, ext);
+    assert.equal(getKind(ext), "text", ext);
+  }
+  assert.equal(isPreviewable("csv", 3 * 1024 * 1024), false); // acima de 2 MB: só download
+  assert.equal(isPreviewable("doc", 1000), false); // formatos antigos seguem só com download
+});
