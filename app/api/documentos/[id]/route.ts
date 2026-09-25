@@ -7,7 +7,7 @@ import { DRIVE_ID_RE } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const blocked = await guard(req, "file", env.rateFile);
+  const blocked = guard(req, "file", env.rateFile);
   if (blocked) return blocked;
 
   const { id } = await ctx.params;

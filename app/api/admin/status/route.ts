@@ -1,13 +1,16 @@
 import { guard, jsonError } from "@/lib/api";
-import { requireAdmin } from "@/lib/auth";
+import { adminDisabled, requireAdmin } from "@/lib/auth";
 import { getCatalog } from "@/lib/catalog";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  const blocked = await guard(req, "admin", 20);
+  const blocked = guard(req, "admin", 20);
   if (blocked) return blocked;
-  if (!(await requireAdmin())) return jsonError(403, "Acesso restrito a administradores.");
+  if (adminDisabled()) {
+    return jsonError(503, "Painel desativado: defina a variável ADMIN_TOKEN nas configurações do servidor.");
+  }
+  if (!requireAdmin(req)) return jsonError(401, "Acesso administrativo negado.");
 
   const catalog = getCatalog();
   // Primeiro acesso: tenta carregar para que o status reflita a conexão real.

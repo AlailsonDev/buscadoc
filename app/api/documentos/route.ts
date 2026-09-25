@@ -14,7 +14,7 @@ const provider = new NameSearchProvider();
 const MIN_REFRESH_MS = 60_000;
 
 export async function GET(req: Request) {
-  const blocked = await guard(req, "search", env.rateSearch);
+  const blocked = guard(req, "search", env.rateSearch);
   if (blocked) return blocked;
 
   const sp = new URL(req.url).searchParams;
