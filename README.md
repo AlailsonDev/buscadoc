@@ -46,7 +46,9 @@ O catálogo é renovado automaticamente após `CATALOG_TTL_MINUTES` (padrão 15)
 
 ## Visualização de documentos
 
-- **PDF e imagens:** exibidos pelo leitor nativo do navegador (no celular, o PDF abre em nova aba no leitor do aparelho).
+- **PDF:** no computador, pelo leitor nativo do navegador. No celular e no tablet, por um leitor próprio (`pdf.js`), porque o Chrome do Android não exibe PDF embutido e abrir em outra aba faria o usuário perder o botão Voltar. Ele desenha as páginas sob demanda (economiza memória) e mostra "Página X de N". O arquivo `public/pdf.worker.min.mjs` é uma cópia de `node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs`; ao atualizar o `pdfjs-dist`, copie-o novamente para manter as versões iguais.
+- **Botão/gesto de voltar:** o documento aberto fica na URL (`?doc=<id>`). Voltar fecha o visualizador e mantém o usuário nos resultados; o link também pode ser compartilhado (exige login).
+- **Imagens:** exibidas na própria página.
 - **Word (.docx) e Excel (.xlsx):** convertidos no próprio navegador (`mammoth` e `read-excel-file`, carregados só ao abrir o documento). O Word reflui para a largura da tela; a planilha rola na horizontal, com abas por planilha e limite de 1.000 linhas exibidas. É uma visualização de leitura: formatações complexas podem diferir do original. O HTML convertido é sanitizado (`lib/sanitize-html.ts`).
 - Arquivos acima de 30 MB, e formatos antigos (`.doc`, `.xls`) e demais tipos, têm apenas download.
 

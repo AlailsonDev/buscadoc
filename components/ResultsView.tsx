@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { DocumentDTO, KindFilter, PeriodFilter, SearchResult } from "@/lib/types";
 import { DocumentList } from "./DocumentList";
@@ -29,18 +29,53 @@ export function ResultsView({ userEmail = null }: { userEmail?: string | null })
   const page = Math.max(1, Number.parseInt(params.get("pagina") ?? "1", 10) || 1);
 
   const [state, setState] = useState<State>({ status: "loading" });
-  const [viewing, setViewing] = useState<DocumentDTO | null>(null);
   const [attempt, setAttempt] = useState(0);
 
-  // O estado da busca vive na URL (compartilhável e com botão Voltar funcionando).
+  // O estado da busca e do documento aberto vive na URL: compartilhável e com o "voltar" funcionando.
   const navigate = useCallback(
-    (next: Record<string, string | null>) => {
+    (next: Record<string, string | null>, opts?: { scroll?: boolean }) => {
       const sp = new URLSearchParams(params.toString());
+      if (!("doc" in next)) sp.delete("doc");
       for (const [k, v] of Object.entries(next)) (v ? sp.set(k, v) : sp.delete(k));
-      router.push(`${pathname}?${sp.toString()}`);
+      router.push(`${pathname}?${sp.toString()}`, opts);
     },
     [params, pathname, router],
   );
+
+  // ---- Visualizador: aberto quando a URL tem ?doc=<id>
+  const docId = params.get("doc");
+  const openedHere = useRef(false); // true se ESTA sessão empurrou a entrada de histórico do documento
+  const [fetchedDoc, setFetchedDoc] = useState<DocumentDTO | null>(null);
+  const fromResults = state.status === "done" ? state.data.items.find((d) => d.id === docId) : undefined;
+  const viewing = docId ? (fromResults ?? (fetchedDoc?.id === docId ? fetchedDoc : null)) : null;
+
+  // Link direto para um documento que não está na página de resultados atual: busca os metadados.
+  useEffect(() => {
+    if (!docId || fromResults || fetchedDoc?.id === docId) return;
+    const ctrl = new AbortController();
+    fetch(`/api/documentos/${encodeURIComponent(docId)}`, { signal: ctrl.signal })
+      .then(async (res) => {
+        if (res.status === 401) return void (window.location.href = "/login");
+        if (res.ok) setFetchedDoc((await res.json()) as DocumentDTO);
+      })
+      .catch(() => {});
+    return () => ctrl.abort();
+  }, [docId, fromResults, fetchedDoc]);
+
+  const openDoc = (d: DocumentDTO) => {
+    openedHere.current = true;
+    navigate({ doc: d.id }, { scroll: false });
+  };
+  const closeDoc = () => {
+    if (openedHere.current) {
+      openedHere.current = false;
+      router.back(); // remove a entrada de histórico do documento: mesmo efeito do gesto de voltar
+    } else {
+      const sp = new URLSearchParams(params.toString());
+      sp.delete("doc");
+      router.replace(`${pathname}?${sp.toString()}`, { scroll: false });
+    }
+  };
 
   useEffect(() => {
     if (!q.trim()) {
@@ -92,7 +127,7 @@ export function ResultsView({ userEmail = null }: { userEmail?: string | null })
             <EmptyState />
           ) : (
             <>
-              <DocumentList docs={state.data.items} onView={setViewing} />
+              <DocumentList docs={state.data.items} onView={openDoc} />
               <Pagination
                 page={state.data.page}
                 total={state.data.total}
@@ -106,7 +141,7 @@ export function ResultsView({ userEmail = null }: { userEmail?: string | null })
           ))}
       </main>
 
-      {viewing && <DocumentViewer doc={viewing} onClose={() => setViewing(null)} />}
+      {viewing && <DocumentViewer doc={viewing} onClose={closeDoc} />}
     </>
   );
 }

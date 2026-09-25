@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Download, ExternalLink, Minus, Plus, X } from "lucide-react";
+import { ArrowLeft, Download, Minus, Plus, X } from "lucide-react";
 import type { DocumentDTO } from "@/lib/types";
 import { FileTypeIcon } from "./FileTypeIcon";
 import { OfficePreview } from "./OfficePreview";
+import { PdfViewer } from "./PdfViewer";
 
 const ZOOMS = [50, 75, 100, 125, 150, 200];
 
 /**
  * Celulares e tablets: o Chrome do Android não exibe PDF dentro de iframe e o Safari do iOS mostra
- * só a primeira página. Nesses aparelhos (toque) oferecemos abrir o PDF no leitor nativo em nova aba.
+ * só a primeira página. Nesses aparelhos (toque) o PDF é desenhado pela própria aplicação (pdf.js).
  */
 function isTouchDevice(): boolean {
   if (typeof window === "undefined") return false;
@@ -18,8 +19,11 @@ function isTouchDevice(): boolean {
 }
 
 /**
- * Visualizador interno. Desktop: PDF no leitor nativo do navegador (iframe). Toque: abrir em nova aba.
- * Imagens: <img>. Demais tipos: apenas download.
+ * Visualizador interno. Desktop: PDF no leitor nativo do navegador (iframe). Toque: leitor pdf.js.
+ * Word/Excel: convertidos no navegador. Imagens: <img>. Demais tipos: apenas download.
+ *
+ * Voltar: o documento aberto faz parte da URL (?doc=...), então o gesto/botão "voltar" do celular
+ * fecha o visualizador e mantém o usuário nos resultados (ver ResultsView).
  */
 export function DocumentViewer({ doc, onClose }: { doc: DocumentDTO; onClose: () => void }) {
   const [zoom, setZoom] = useState(100);
@@ -30,7 +34,11 @@ export function DocumentViewer({ doc, onClose }: { doc: DocumentDTO; onClose: ()
   const isPdf = doc.extension === "pdf";
   const isImage = doc.kind === "image" && doc.previewable;
   const isOffice = doc.previewable && (doc.extension === "docx" || doc.extension === "xlsx");
-  const showZoom = (isPdf && !touch) || isImage || isOffice;
+  const showZoom = isPdf || isImage || isOffice;
+  const zoomOnMobile = isOffice || (isPdf && touch);
+
+  // Fechar pela interface: quem abriu o visualizador (ResultsView) decide como fechar, voltando no histórico.
+  const close = onClose;
 
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
@@ -39,7 +47,7 @@ export function DocumentViewer({ doc, onClose }: { doc: DocumentDTO; onClose: ()
     closeRef.current?.focus();
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") return onClose();
+      if (e.key === "Escape") return close();
       if (e.key !== "Tab" || !dialogRef.current) return;
       // Mantém o foco dentro do diálogo.
       const items = dialogRef.current.querySelectorAll<HTMLElement>("button, a[href]");
@@ -60,7 +68,8 @@ export function DocumentViewer({ doc, onClose }: { doc: DocumentDTO; onClose: ()
       document.body.style.overflow = overflow;
       previous?.focus();
     };
-  }, [onClose]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const step = (dir: 1 | -1) => {
     const i = ZOOMS.indexOf(zoom);
@@ -81,13 +90,16 @@ export function DocumentViewer({ doc, onClose }: { doc: DocumentDTO; onClose: ()
         className="animate-fade-up flex h-dvh w-full max-w-5xl flex-col overflow-hidden bg-white shadow-2xl sm:h-[90dvh] sm:self-center sm:rounded-2xl"
       >
         <div className="flex items-center gap-2 border-b border-line px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:flex-wrap sm:gap-x-4 sm:px-4 sm:py-3">
-          <FileTypeIcon kind={doc.kind} className="hidden h-9 w-9 sm:inline-flex" />
+          <button type="button" className={`${iconBtn} sm:hidden`} onClick={close} aria-label="Voltar para os resultados">
+            <ArrowLeft className="h-5 w-5" aria-hidden />
+          </button>
+          <FileTypeIcon kind={doc.kind} className="h-9 w-9 max-sm:hidden" />
           <h2 className="min-w-0 flex-1 truncate text-sm font-semibold sm:basis-40 sm:text-base" title={doc.name}>
             {doc.name}
           </h2>
 
           {showZoom && (
-            <div className={`items-center gap-1 ${isOffice ? "flex" : "hidden sm:flex"}`} role="group" aria-label="Zoom">
+            <div className={`items-center gap-1 ${zoomOnMobile ? "flex" : "hidden sm:flex"}`} role="group" aria-label="Zoom">
               <button type="button" className={iconBtn} onClick={() => step(-1)} disabled={zoom === ZOOMS[0]} aria-label="Diminuir zoom">
                 <Minus className="h-4 w-4" aria-hidden />
               </button>
@@ -114,7 +126,7 @@ export function DocumentViewer({ doc, onClose }: { doc: DocumentDTO; onClose: ()
             <Download className="h-5 w-5 sm:h-4 sm:w-4" aria-hidden />
             <span className="hidden sm:inline">Baixar</span>
           </a>
-          <button ref={closeRef} type="button" className={iconBtn} onClick={onClose} aria-label="Fechar visualizador">
+          <button ref={closeRef} type="button" className={`${iconBtn} max-sm:hidden`} onClick={close} aria-label="Fechar visualizador">
             <X className="h-5 w-5" aria-hidden />
           </button>
         </div>
@@ -128,6 +140,8 @@ export function DocumentViewer({ doc, onClose }: { doc: DocumentDTO; onClose: ()
               src={`${base}?inline=1#zoom=${zoom}`}
               className="h-full w-full border-0"
             />
+          ) : isPdf ? (
+            <PdfViewer url={base} size={doc.size} zoom={zoom} />
           ) : isOffice ? (
             <OfficePreview
               url={base}
@@ -148,29 +162,10 @@ export function DocumentViewer({ doc, onClose }: { doc: DocumentDTO; onClose: ()
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
               <FileTypeIcon kind={doc.kind} className="h-16 w-16" />
-              <p className="max-w-sm text-lg text-ink">
-                {isPdf
-                  ? "Abra o PDF no leitor do seu aparelho para ler, dar zoom e navegar entre as páginas."
-                  : "Este tipo de arquivo não possui visualização online."}
-              </p>
-              <div className="flex w-full max-w-xs flex-col gap-3 sm:max-w-none sm:flex-row sm:justify-center">
-                {isPdf && (
-                  <a
-                    href={`${base}?inline=1`}
-                    target="_blank"
-                    rel="noopener"
-                    className={`${bigBtn} bg-brand-700 text-white hover:bg-brand-800`}
-                  >
-                    <ExternalLink className="h-4 w-4" aria-hidden /> Abrir documento
-                  </a>
-                )}
-                <a
-                  href={base}
-                  className={`${bigBtn} ${isPdf ? "border border-line bg-white hover:bg-slate-50" : "bg-brand-700 text-white hover:bg-brand-800"}`}
-                >
-                  <Download className="h-4 w-4" aria-hidden /> Baixar documento
-                </a>
-              </div>
+              <p className="max-w-sm text-lg text-ink">Este tipo de arquivo não possui visualização online.</p>
+              <a href={base} className={`${bigBtn} max-w-xs bg-brand-700 text-white hover:bg-brand-800 sm:max-w-none`}>
+                <Download className="h-4 w-4" aria-hidden /> Baixar documento
+              </a>
             </div>
           )}
         </div>
